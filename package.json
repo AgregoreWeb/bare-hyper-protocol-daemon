@@ -1,0 +1,31 @@
+{
+  "name": "bare-hyper-protocol-daemon",
+  "version": "1.0.0",
+  "description": "HTTP Daemon for interacting with hyperdrive. Built for bare as an alternative to hypercore-fetch",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "bare test.js"
+  },
+  "keywords": [
+    "p2p",
+    "hypercore",
+    "bare",
+    "agregore",
+    "hyperdrive"
+  ],
+  "author": "RangerMauve",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "bare-http1": "^4.0.2",
+    "bare-signals": "^4.0.2",
+    "bare-stream": "^2.6.5",
+    "mime": "^4.0.7"
+  },
+  "devDependencies": {
+    "bare-fetch": "^2.2.0",
+    "brittle": "^3.13.1",
+    "hyper-sdk": "github:RangerMAuve/hyper-sdk#bare-support",
+    "standard": "^17.1.2"
+  }
+}

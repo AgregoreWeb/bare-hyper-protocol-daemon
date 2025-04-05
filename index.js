@@ -9,8 +9,19 @@ import otherTypes from 'mime/types/other.js'
 const mime = new Mime(standardTypes, otherTypes)
 // Support gemini files
 mime.define({
-  'text/gemini': ['gmi', 'gemini']
+  'text/gemini': ['gmi', 'gemini'],
+  'text/x-org': ['org']
 }, true)
+
+const INDEX_FILES = [
+  'index.html',
+  'index.md',
+  'index.gmi',
+  'index.gemini',
+  'index.org',
+  'README.md',
+  'README.org'
+]
 
 const SEP = '/'
 export const PORT = 3748 // DRIV on phone dial pad
@@ -39,14 +50,16 @@ export async function create (port = PORT, sdkOptions = {}) {
 
     try {
       const [hostname, ...pathSegments] = url.split(SEP).slice(2)
-      const filePath = pathSegments.join(SEP) || SEP
+      let filePath = pathSegments.join(SEP) || SEP
+
+      const fullURL = new URL(filePath, `hyper://${hostname}`)
+      // TODO: Parse search params
+      const noResolve = fullURL.search.includes('noResolve')
+      filePath = fullURL.pathname
 
       const key = await sdk.resolveDNSToKey(hostname)
-      console.log({ hostname, pathSegments, filePath, key })
 
       const drive = await sdk.getDrive(key)
-
-      console.log('Version', drive.version)
 
       if (filePath.endsWith(SEP)) {
         // TODO: Read index.*
@@ -61,14 +74,33 @@ export async function create (port = PORT, sdkOptions = {}) {
             entries.push(path)
           }
         }
-        res.statusCode = 200
-        res.setHeader('Content-Type', 'application/json')
-        res.end(JSON.stringify(entries))
-        return
+
+        let hadIndex = false
+
+        if (!noResolve) {
+          for (const indexFile of INDEX_FILES) {
+            if (entries.includes(indexFile)) {
+              hadIndex = true
+              filePath = filePath + indexFile
+              break
+            }
+          }
+        }
+        if (!hadIndex) {
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify(entries))
+          return
+        }
       }
 
-      // TODO: Try finding files via `.md, .html, etc`
-      const entry = await drive.entry(filePath)
+      let entry = null
+      for (const entryPath of makeToTry(filePath)) {
+        entry = await drive.entry(entryPath)
+        filePath = entryPath
+        if (entry) break
+      }
+
       if (!entry) {
         res.statusCode = 404
         res.setHeader('Content-Type', 'text/plain')
@@ -105,4 +137,15 @@ export async function create (port = PORT, sdkOptions = {}) {
   }
 
   return { close, server, sdk, port: boundPort }
+}
+
+function makeToTry (pathname) {
+  return [
+    pathname,
+    pathname + '.html',
+    pathname + '.md',
+    pathname + '.gmi',
+    pathname + '.gemini',
+    pathname + '.org'
+  ]
 }

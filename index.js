@@ -10,7 +10,7 @@ const mime = new Mime(standardTypes, otherTypes)
 // Support gemini files
 mime.define({
   'text/gemini': ['gmi', 'gemini'],
-  'text/x-org': ['org']
+  'text/org': ['org']
 }, true)
 
 const INDEX_FILES = [
@@ -26,7 +26,7 @@ const INDEX_FILES = [
 const SEP = '/'
 export const PORT = 3748 // DRIV on phone dial pad
 
-export async function create (port = PORT, sdkOptions = {}) {
+export async function create ({ port = PORT, ...sdkOptions } = {}) {
   const sdk = await SDK.create({
     storage: './storage',
     ...sdkOptions

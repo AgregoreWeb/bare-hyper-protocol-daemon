@@ -27,12 +27,26 @@ const SEP = '/'
 export const PORT = 3748 // DRIV on phone dial pad
 
 export async function create ({ port = PORT, ...sdkOptions } = {}) {
-  const sdk = await SDK.create({
-    storage: './storage',
-    ...sdkOptions
-  })
+  let sdk = null
+  let loading = null
+
+  async function getSDK () {
+    if (sdk) return sdk
+    if (loading) return loading
+
+    loading = SDK.create({
+      storage: './storage',
+      ...sdkOptions
+    })
+
+    sdk = await loading
+    loading = null
+    return sdk
+  }
 
   const server = http.createServer(async (req, res) => {
+    const sdk = await getSDK()
+
     const { method, url } = req
     res.statusCode = 200
     if (!url.startsWith('/hyper/')) {
@@ -133,7 +147,10 @@ export async function create ({ port = PORT, ...sdkOptions } = {}) {
 
   async function close () {
     server.close()
-    await sdk.close()
+    if (loading) sdk = await loading
+    if (sdk) {
+      await sdk.close()
+    }
   }
 
   return { close, server, sdk, port: boundPort }
